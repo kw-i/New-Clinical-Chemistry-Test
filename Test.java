@@ -9,6 +9,7 @@ public abstract class Test {
         this.range = range;
     }
 
+
     public String evaluate(double value, char sex) {
         if (value < range.getMin(sex)) return "LOW";
         if (value > range.getMax(sex)) return "HIGH";
@@ -16,12 +17,24 @@ public abstract class Test {
     }
 
     public abstract String info();
-
+    
     public String getName() {
         return name;
     }
-
+    
     public ReferenceRange getRange() {
         return range;
     }
-}    
+    
+    public double getPrice() {
+        return price;
+    }
+    
+    public boolean takesTime() {
+        return false;
+    }
+
+    public String getProcessingTime() {
+        return "N/A";
+    }
+}

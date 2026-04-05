@@ -1,21 +1,19 @@
 import javax.swing.*;
 import java.awt.*;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Random;
 
 public class LabGUI {
     private JFrame frame;
-    private JList<String> testList; // available tests
-    private DefaultListModel<String> selectedTestsModel; // side list
-    private JList<String> selectedTestsList; 
-    private JButton addTestButton, confirmTestsButton;
+    private JList<String> testList;
+    private DefaultListModel<String> selectedTestsModel;
+    private JList<String> selectedTestsList;
+    private JButton addTestButton, takeTestButton;
     private Test currentTest;
 
     private String patientName;
     private char patientSex;
     private int patientAge;
 
-    // Colors
     private final Color BG_COLOR = new Color(255, 248, 180);
     private final Color PANEL_COLOR = new Color(255, 239, 140);
     private final Color BUTTON_COLOR = new Color(255, 204, 0);
@@ -41,7 +39,7 @@ public class LabGUI {
         mainPanel.setBackground(BG_COLOR);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
-        // --- Top info panel ---
+        // Top info panel
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
         infoPanel.setBackground(PANEL_COLOR);
         infoPanel.add(createLabel("Name: " + patientName));
@@ -49,7 +47,7 @@ public class LabGUI {
         infoPanel.add(createLabel("Sex: " + patientSex));
         mainPanel.add(infoPanel, BorderLayout.NORTH);
 
-        // --- Center panel: Available tests + selected tests ---
+        // Center panel: Available + Selected tests
         JPanel centerPanel = new JPanel(new BorderLayout(10,0));
         centerPanel.setBackground(BG_COLOR);
 
@@ -69,16 +67,16 @@ public class LabGUI {
         JPanel buttonsPanel = new JPanel(new FlowLayout());
         buttonsPanel.setBackground(PANEL_COLOR);
         addTestButton = new JButton("Add Test");
-        confirmTestsButton = new JButton("Confirm Tests");
+        takeTestButton = new JButton("Take Test (Simulated)");
         styleButton(addTestButton);
-        styleButton(confirmTestsButton);
+        styleButton(takeTestButton);
         buttonsPanel.add(addTestButton);
-        buttonsPanel.add(confirmTestsButton);
+        buttonsPanel.add(takeTestButton);
         availablePanel.add(buttonsPanel, BorderLayout.SOUTH);
 
         centerPanel.add(availablePanel, BorderLayout.CENTER);
 
-        // Selected tests panel (smaller width)
+        // Selected tests panel
         JPanel selectedPanel = new JPanel(new BorderLayout());
         selectedPanel.setBackground(PANEL_COLOR);
         selectedPanel.add(createLabel("Selected Tests:"), BorderLayout.NORTH);
@@ -89,18 +87,16 @@ public class LabGUI {
         selectedTestsList.setForeground(TEXT_COLOR);
 
         JScrollPane selectedScroll = new JScrollPane(selectedTestsList);
-        selectedScroll.setPreferredSize(new Dimension(100, 0)); // smaller width
+        selectedScroll.setPreferredSize(new Dimension(180, 200));
         selectedPanel.add(selectedScroll, BorderLayout.CENTER);
 
         centerPanel.add(selectedPanel, BorderLayout.EAST);
-
-        mainPanel.add(centerPanel, BorderLayout.CENTER);
-
+        mainPanel.add(centerPanel);
         frame.add(mainPanel);
 
-        // --- Action Listeners ---
+        // Action listeners
         addTestButton.addActionListener(e -> addSelectedTest());
-        confirmTestsButton.addActionListener(e -> confirmAndEvaluateTests());
+        takeTestButton.addActionListener(e -> simulateSelectedTests());
 
         frame.setVisible(true);
     }
@@ -148,90 +144,86 @@ public class LabGUI {
         }
     }
 
-    private void confirmAndEvaluateTests() {
+    private void simulateSelectedTests() {
         if(selectedTestsModel.isEmpty()){
             JOptionPane.showMessageDialog(frame,"No tests selected!");
             return;
         }
 
-        Map<String, Double> testValues = new LinkedHashMap<>();
-
-        // Prompt for each test
+        // Calculate total price
+        double totalPrice = 0;
         for(int i=0;i<selectedTestsModel.size();i++){
-            String testName = selectedTestsModel.get(i);
-            boolean valid = false;
-            while(!valid){
-                String input = JOptionPane.showInputDialog(frame, "Enter result value for " + testName + ":");
-                if(input == null) return; // canceled
-                try{
-                    double value = Double.parseDouble(input);
-                    testValues.put(testName, value);
-                    valid = true;
-                } catch(NumberFormatException e){
-                    JOptionPane.showMessageDialog(frame,"Invalid input. Please enter a numeric value.");
-                }
-            }
+            selectTest(selectedTestsModel.get(i));
+            totalPrice += currentTest.getPrice();
         }
 
-        // Confirmation dialog
-        StringBuilder summary = new StringBuilder("Confirm the following results:\n\n");
-        for(String test : testValues.keySet()){
-            summary.append(test).append(": ").append(testValues.get(test)).append("\n");
+        // Payment simulation
+        String paymentMsg = String.format("Total Price: $%.2f\nProceed with payment?", totalPrice);
+        int payment = JOptionPane.showConfirmDialog(frame, paymentMsg, "Payment", JOptionPane.OK_CANCEL_OPTION);
+        if(payment != JOptionPane.OK_OPTION){
+            JOptionPane.showMessageDialog(frame,"Payment cancelled. Tests not processed.");
+            return;
         }
-        int confirm = JOptionPane.showConfirmDialog(frame, summary.toString(),"Confirm Results",JOptionPane.OK_CANCEL_OPTION);
-        if(confirm != JOptionPane.OK_OPTION) return;
 
-        // --- Show interpretation windows cascading ---
+        // Generate results
+        Random rand = new Random();
         int xOffset = 30, yOffset = 30;
         int count = 0;
         int screenWidth = Toolkit.getDefaultToolkit().getScreenSize().width;
         int screenHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
 
-        for(String testName : testValues.keySet()){
+        for(int i=0;i<selectedTestsModel.size();i++){
+            String testName = selectedTestsModel.get(i);
             selectTest(testName);
-            double value = testValues.get(testName);
 
-            String result = currentTest.evaluate(value, patientSex);
-            String interpretation = currentTest.info();
-            String range = currentTest.getRange().getRangeString(patientSex);
+            boolean takesTime = currentTest.takesTime();
+            if(takesTime){
+                String timeRequired = currentTest.getProcessingTime();
+                JOptionPane.showMessageDialog(frame,
+                        testName + ":\nCollect your results in " + timeRequired + ".");
+            } else {
+                double value = rand.nextDouble() * 300;
 
-            JFrame resultFrame = new JFrame(currentTest.getName()+" Result");
-            resultFrame.setSize(400,300);
+                String result = currentTest.evaluate(value, patientSex);
+                String interpretation = currentTest.info();
+                String range = currentTest.getRange().getRangeString(patientSex);
 
-            // Cascade windows
-            int x = 100 + (count * xOffset);
-            int y = 100 + (count * yOffset);
+                JFrame resultFrame = new JFrame(testName + " Result");
+                resultFrame.setSize(400,300);
 
-            // Wrap around screen if needed
-            if(x + 400 > screenWidth) x = 50;
-            if(y + 300 > screenHeight) y = 50;
-            resultFrame.setLocation(x, y);
+                int x = 100 + (count * xOffset);
+                int y = 100 + (count * yOffset);
+                if(x + 400 > screenWidth) x = 50;
+                if(y + 300 > screenHeight) y = 50;
+                resultFrame.setLocation(x, y);
+                count++;
 
-            count++;
+                JTextArea textArea = new JTextArea();
+                textArea.setEditable(false);
+                textArea.setBackground(BG_COLOR);
 
-            JTextArea textArea = new JTextArea();
-            textArea.setEditable(false);
-            textArea.setBackground(BG_COLOR);
+                textArea.setText(
+                        "PATIENT: " + patientName +
+                                "\nSEX: " + patientSex +
+                                "\nAGE: " + patientAge +
+                                "\n\nTEST: " + testName +
+                                "\nPRICE: $" + String.format("%.2f", currentTest.getPrice()) +
+                                "\nVALUE: " + String.format("%.2f", value) +
+                                "\nREFERENCE RANGE: " + range +
+                                "\nRESULT: " + result +
+                                "\n\nINTERPRETATION:\n" + interpretation
+                );
 
-            textArea.setText(
-                    "PATIENT: "+patientName+
-                            "\nSEX: "+patientSex+
-                            "\nAGE: "+patientAge+
-                            "\n\nTEST: "+currentTest.getName()+
-                            "\nVALUE: "+value+
-                            "\nREFERENCE RANGE: "+range+
-                            "\nRESULT: "+result+
-                            "\n\nINTERPRETATION:\n"+interpretation
-            );
+                if(result.equals("HIGH")) textArea.setForeground(Color.RED);
+                else if(result.equals("LOW")) textArea.setForeground(Color.BLUE);
+                else textArea.setForeground(new Color(0,128,0));
 
-            if(result.equals("HIGH")) textArea.setForeground(Color.RED);
-            else if(result.equals("LOW")) textArea.setForeground(Color.BLUE);
-            else textArea.setForeground(new Color(0,128,0));
-
-            resultFrame.add(new JScrollPane(textArea));
-            resultFrame.setVisible(true);
+                resultFrame.add(new JScrollPane(textArea));
+                resultFrame.setVisible(true);
+            }
         }
 
+        // Clear selected tests
         selectedTestsModel.clear();
     }
 
