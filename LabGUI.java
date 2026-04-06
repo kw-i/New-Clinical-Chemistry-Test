@@ -20,6 +20,7 @@ public class LabGUI {
     private final Color TEXT_COLOR = new Color(102, 75, 0);
     private final Color FIELD_COLOR = new Color(255, 255, 210);
 
+    //tests
     private final String[] tests = {
             "FBS","RBS","Total Cholesterol","HDL","LDL","Triglycerides",
             "Creatinine","Uric Acid","BUN","AST","ALT","Albumin",
@@ -29,7 +30,7 @@ public class LabGUI {
     };
 
     public LabGUI() {
-        getPatientInfo();
+        getPatientInfo();// method from this class
 
         frame = new JFrame("Clinical Chemistry Lab Simulator");
         frame.setSize(750, 450);
@@ -204,14 +205,14 @@ public class LabGUI {
 
                 textArea.setText(
                         "PATIENT: " + patientName +
-                                "\nSEX: " + patientSex +
-                                "\nAGE: " + patientAge +
-                                "\n\nTEST: " + testName +
-                                "\nPRICE: $" + String.format("%.2f", currentTest.getPrice()) +
-                                "\nVALUE: " + String.format("%.2f", value) +
-                                "\nREFERENCE RANGE: " + range +
-                                "\nRESULT: " + result +
-                                "\n\nINTERPRETATION:\n" + interpretation
+                        "\nSEX: " + patientSex +
+                        "\nAGE: " + patientAge +
+                        "\n\nTEST: " + testName +
+                        "\nPRICE: $" + String.format("%.2f", currentTest.getPrice()) +
+                        "\nVALUE: " + String.format("%.2f", value) +
+                        "\nREFERENCE RANGE: " + range +
+                        "\nRESULT: " + result +
+                        "\n\nINTERPRETATION:\n" + interpretation
                 );
 
                 if(result.equals("HIGH")) textArea.setForeground(Color.RED);
