@@ -8,6 +8,8 @@ public class LabGUI {
     private DefaultListModel<String> selectedTestsModel;
     private JList<String> selectedTestsList;
     private JButton addTestButton, takeTestButton;
+    private JComboBox<String> testTypeBox;
+
     private Test currentTest;
 
     private String patientName;
@@ -20,8 +22,7 @@ public class LabGUI {
     private final Color TEXT_COLOR = new Color(102, 75, 0);
     private final Color FIELD_COLOR = new Color(255, 255, 210);
 
-    //tests
-    private final String[] tests = {
+    private final String[] bloodTests = {
             "FBS","RBS","Total Cholesterol","HDL","LDL","Triglycerides",
             "Creatinine","Uric Acid","BUN","AST","ALT","Albumin",
             "Total Protein","ALP","Total Calcium",
@@ -29,8 +30,13 @@ public class LabGUI {
             "Ionized Calcium"
     };
 
+    private final String[] urineTests = {
+            "Urinalysis","Urine Protein","Urine Glucose",
+            "Urine Ketones","Urine Specific Gravity","Urine pH"
+    };
+
     public LabGUI() {
-        getPatientInfo();// method from this class
+        getPatientInfo();
 
         frame = new JFrame("Clinical Chemistry Lab Simulator");
         frame.setSize(750, 450);
@@ -40,44 +46,52 @@ public class LabGUI {
         mainPanel.setBackground(BG_COLOR);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
-        // Top info panel
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
         infoPanel.setBackground(PANEL_COLOR);
+
         infoPanel.add(createLabel("Name: " + patientName));
         infoPanel.add(createLabel("Age: " + patientAge));
         infoPanel.add(createLabel("Sex: " + patientSex));
+
+        testTypeBox = new JComboBox<>(new String[]{"Blood Tests", "Urine Tests"});
+        testTypeBox.setBackground(FIELD_COLOR);
+        testTypeBox.setForeground(TEXT_COLOR);
+
+        infoPanel.add(createLabel("Test Type:"));
+        infoPanel.add(testTypeBox);
+
         mainPanel.add(infoPanel, BorderLayout.NORTH);
 
-        // Center panel: Available + Selected tests
         JPanel centerPanel = new JPanel(new BorderLayout(10,0));
         centerPanel.setBackground(BG_COLOR);
 
-        // Available tests panel
         JPanel availablePanel = new JPanel(new BorderLayout());
         availablePanel.setBackground(PANEL_COLOR);
         availablePanel.add(createLabel("Available Tests:"), BorderLayout.NORTH);
 
-        testList = new JList<>(tests);
+        testList = new JList<>(bloodTests);
         testList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         testList.setBackground(FIELD_COLOR);
         testList.setForeground(TEXT_COLOR);
-        testList.setVisibleRowCount(15);
+
         availablePanel.add(new JScrollPane(testList), BorderLayout.CENTER);
 
-        // Buttons panel
-        JPanel buttonsPanel = new JPanel(new FlowLayout());
+        JPanel buttonsPanel = new JPanel();
         buttonsPanel.setBackground(PANEL_COLOR);
+
         addTestButton = new JButton("Add Test");
         takeTestButton = new JButton("Take Test (Simulated)");
+
         styleButton(addTestButton);
         styleButton(takeTestButton);
+
         buttonsPanel.add(addTestButton);
         buttonsPanel.add(takeTestButton);
+
         availablePanel.add(buttonsPanel, BorderLayout.SOUTH);
 
         centerPanel.add(availablePanel, BorderLayout.CENTER);
 
-        // Selected tests panel
         JPanel selectedPanel = new JPanel(new BorderLayout());
         selectedPanel.setBackground(PANEL_COLOR);
         selectedPanel.add(createLabel("Selected Tests:"), BorderLayout.NORTH);
@@ -87,19 +101,28 @@ public class LabGUI {
         selectedTestsList.setBackground(FIELD_COLOR);
         selectedTestsList.setForeground(TEXT_COLOR);
 
-        JScrollPane selectedScroll = new JScrollPane(selectedTestsList);
-        selectedScroll.setPreferredSize(new Dimension(180, 200));
-        selectedPanel.add(selectedScroll, BorderLayout.CENTER);
+        selectedPanel.add(new JScrollPane(selectedTestsList), BorderLayout.CENTER);
 
         centerPanel.add(selectedPanel, BorderLayout.EAST);
+
         mainPanel.add(centerPanel);
         frame.add(mainPanel);
 
-        // Action listeners
         addTestButton.addActionListener(e -> addSelectedTest());
         takeTestButton.addActionListener(e -> simulateSelectedTests());
+        testTypeBox.addActionListener(e -> switchTestMode());
 
         frame.setVisible(true);
+    }
+
+    private void switchTestMode() {
+        String selected = (String) testTypeBox.getSelectedItem();
+
+        if(selected.equals("Blood Tests")) {
+            testList.setListData(bloodTests);
+        } else {
+            testList.setListData(urineTests);
+        }
     }
 
     private JLabel createLabel(String text) {
@@ -113,35 +136,39 @@ public class LabGUI {
         JTextField ageField = new JTextField();
         JComboBox<String> sexBox = new JComboBox<>(new String[]{"Male","Female"});
 
-        JPanel inputPanel = new JPanel(new GridLayout(3,2,5,5));
-        inputPanel.setBackground(PANEL_COLOR);
-        inputPanel.add(new JLabel("Name:")); inputPanel.add(nameField);
-        inputPanel.add(new JLabel("Sex:")); inputPanel.add(sexBox);
-        inputPanel.add(new JLabel("Age:")); inputPanel.add(ageField);
+        JPanel panel = new JPanel(new GridLayout(3,2));
+        panel.add(new JLabel("Name:")); panel.add(nameField);
+        panel.add(new JLabel("Sex:")); panel.add(sexBox);
+        panel.add(new JLabel("Age:")); panel.add(ageField);
 
         int result;
         do {
-            result = JOptionPane.showConfirmDialog(null, inputPanel, "Enter Patient Information",
-                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            result = JOptionPane.showConfirmDialog(null, panel, "Patient Info",
+                    JOptionPane.OK_CANCEL_OPTION);
             if(result != JOptionPane.OK_OPTION) System.exit(0);
         } while(nameField.getText().isEmpty() || ageField.getText().isEmpty());
 
         patientName = nameField.getText();
         patientSex = sexBox.getSelectedItem().equals("Male") ? 'M' : 'F';
+
         try { patientAge = Integer.parseInt(ageField.getText()); }
-        catch(NumberFormatException e) { patientAge = 0; }
+        catch(Exception e) { patientAge = 0; }
     }
 
-    private void styleButton(JButton button){
-        button.setBackground(BUTTON_COLOR);
-        button.setForeground(TEXT_COLOR);
-        button.setFocusPainted(false);
+    private void styleButton(JButton b){
+        b.setBackground(BUTTON_COLOR);
+        b.setForeground(TEXT_COLOR);
     }
 
     private void addSelectedTest() {
         String selected = testList.getSelectedValue();
-        if(selected != null && !selectedTestsModel.contains(selected)) {
-            selectedTestsModel.addElement(selected);
+        if(selected == null) return;
+
+        String type = (String) testTypeBox.getSelectedItem();
+        String labeled = (type.equals("Blood Tests") ? "[BLOOD] " : "[URINE] ") + selected;
+
+        if(!selectedTestsModel.contains(labeled)){
+            selectedTestsModel.addElement(labeled);
         }
     }
 
@@ -151,80 +178,51 @@ public class LabGUI {
             return;
         }
 
-        // Calculate total price
-        double totalPrice = 0;
+        double total = 0;
+
         for(int i=0;i<selectedTestsModel.size();i++){
-            selectTest(selectedTestsModel.get(i));
-            totalPrice += currentTest.getPrice();
+            String labeled = selectedTestsModel.get(i);
+            String name = labeled.replace("[BLOOD] ", "").replace("[URINE] ", "");
+            selectTest(name);
+            total += currentTest.getPrice();
         }
 
-        // Payment simulation
-        String paymentMsg = String.format("Total Price: $%.2f\nProceed with payment?", totalPrice);
-        int payment = JOptionPane.showConfirmDialog(frame, paymentMsg, "Payment", JOptionPane.OK_CANCEL_OPTION);
-        if(payment != JOptionPane.OK_OPTION){
-            JOptionPane.showMessageDialog(frame,"Payment cancelled. Tests not processed.");
-            return;
-        }
+        int confirm = JOptionPane.showConfirmDialog(frame,
+                "Total Price: $" + total + "\nProceed?",
+                "Payment", JOptionPane.OK_CANCEL_OPTION);
 
-        // Generate results
+        if(confirm != JOptionPane.OK_OPTION) return;
+
         Random rand = new Random();
-        int xOffset = 30, yOffset = 30;
-        int count = 0;
-        int screenWidth = Toolkit.getDefaultToolkit().getScreenSize().width;
-        int screenHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
 
         for(int i=0;i<selectedTestsModel.size();i++){
-            String testName = selectedTestsModel.get(i);
-            selectTest(testName);
+            String labeled = selectedTestsModel.get(i);
+            String name = labeled.replace("[BLOOD] ", "").replace("[URINE] ", "");
+            selectTest(name);
 
-            boolean takesTime = currentTest.takesTime();
-            if(takesTime){
-                String timeRequired = currentTest.getProcessingTime();
-                JOptionPane.showMessageDialog(frame,
-                        testName + ":\nCollect your results in " + timeRequired + ".");
-            } else {
-                double value = rand.nextDouble() * 300;
+            double value = rand.nextDouble() * 300;
+            String result = currentTest.evaluate(value, patientSex);
 
-                String result = currentTest.evaluate(value, patientSex);
-                String interpretation = currentTest.info();
-                String range = currentTest.getRange().getRangeString(patientSex);
+            String type = labeled.contains("[BLOOD]") ? "BLOOD TEST" : "URINE TEST";
 
-                JFrame resultFrame = new JFrame(testName + " Result");
-                resultFrame.setSize(400,300);
+            JTextArea area = new JTextArea();
+            area.setEditable(false);
 
-                int x = 100 + (count * xOffset);
-                int y = 100 + (count * yOffset);
-                if(x + 400 > screenWidth) x = 50;
-                if(y + 300 > screenHeight) y = 50;
-                resultFrame.setLocation(x, y);
-                count++;
+            area.setText(
+                    "PATIENT: " + patientName +
+                    "\nTYPE: " + type +
+                    "\nTEST: " + name +
+                    "\nVALUE: " + value +
+                    "\nRESULT: " + result +
+                    "\n\n" + currentTest.info()
+            );
 
-                JTextArea textArea = new JTextArea();
-                textArea.setEditable(false);
-                textArea.setBackground(BG_COLOR);
-
-                textArea.setText(
-                        "PATIENT: " + patientName +
-                        "\nSEX: " + patientSex +
-                        "\nAGE: " + patientAge +
-                        "\n\nTEST: " + testName +
-                        "\nPRICE: $" + String.format("%.2f", currentTest.getPrice()) +
-                        "\nVALUE: " + String.format("%.2f", value) +
-                        "\nREFERENCE RANGE: " + range +
-                        "\nRESULT: " + result +
-                        "\n\nINTERPRETATION:\n" + interpretation
-                );
-
-                if(result.equals("HIGH")) textArea.setForeground(Color.RED);
-                else if(result.equals("LOW")) textArea.setForeground(Color.BLUE);
-                else textArea.setForeground(new Color(0,128,0));
-
-                resultFrame.add(new JScrollPane(textArea));
-                resultFrame.setVisible(true);
-            }
+            JFrame f = new JFrame(name + " Result");
+            f.setSize(350,250);
+            f.add(new JScrollPane(area));
+            f.setVisible(true);
         }
 
-        // Clear selected tests
         selectedTestsModel.clear();
     }
 
@@ -249,6 +247,13 @@ public class LabGUI {
             case "Potassium": currentTest = new PlasmaTests.Potassium(); break;
             case "Chloride": currentTest = new PlasmaTests.Chloride(); break;
             case "Ionized Calcium": currentTest = new WholeBloodTests.IonizedCalcium(); break;
+
+            case "Urinalysis": currentTest = new UrineTests.Urinalysis(); break;
+            case "Urine Protein": currentTest = new UrineTests.UrineProtein(); break;
+            case "Urine Glucose": currentTest = new UrineTests.UrineGlucose(); break;
+            case "Urine Ketones": currentTest = new UrineTests.UrineKetones(); break;
+            case "Urine Specific Gravity": currentTest = new UrineTests.UrineSpecificGravity(); break;
+            case "Urine pH": currentTest = new UrineTests.UrinepH(); break;
         }
     }
 }
