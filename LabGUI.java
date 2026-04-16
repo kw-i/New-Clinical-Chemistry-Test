@@ -35,6 +35,14 @@ public class LabGUI {
             "Urine Ketones","Urine Specific Gravity","Urine pH"
     };
 
+    private final String[] stoolTests = {
+            "Stool pH","Occult Blood","Stool Fat","Stool WBC","Parasite Test"
+    };
+
+    private final String[] mouthTests = {
+            "Oral Bacteria","Candida","Strep Test","Oral Viral Load","Oral pH"
+    };
+
     public LabGUI() {
         getPatientInfo();
 
@@ -53,7 +61,10 @@ public class LabGUI {
         infoPanel.add(createLabel("Age: " + patientAge));
         infoPanel.add(createLabel("Sex: " + patientSex));
 
-        testTypeBox = new JComboBox<>(new String[]{"Blood Tests", "Urine Tests"});
+        testTypeBox = new JComboBox<>(new String[]{
+                "Blood Tests", "Urine Tests", "Stool Tests", "Mouth Swab Tests"
+        });
+
         testTypeBox.setBackground(FIELD_COLOR);
         testTypeBox.setForeground(TEXT_COLOR);
 
@@ -118,10 +129,11 @@ public class LabGUI {
     private void switchTestMode() {
         String selected = (String) testTypeBox.getSelectedItem();
 
-        if(selected.equals("Blood Tests")) {
-            testList.setListData(bloodTests);
-        } else {
-            testList.setListData(urineTests);
+        switch(selected) {
+            case "Blood Tests": testList.setListData(bloodTests); break;
+            case "Urine Tests": testList.setListData(urineTests); break;
+            case "Stool Tests": testList.setListData(stoolTests); break;
+            case "Mouth Swab Tests": testList.setListData(mouthTests); break;
         }
     }
 
@@ -165,26 +177,78 @@ public class LabGUI {
         if(selected == null) return;
 
         String type = (String) testTypeBox.getSelectedItem();
-        String labeled = (type.equals("Blood Tests") ? "[BLOOD] " : "[URINE] ") + selected;
+
+        String prefix = "";
+        switch(type) {
+            case "Blood Tests": prefix = "[BLOOD] "; break;
+            case "Urine Tests": prefix = "[URINE] "; break;
+            case "Stool Tests": prefix = "[STOOL] "; break;
+            case "Mouth Swab Tests": prefix = "[MOUTH] "; break;
+        }
+
+        String labeled = prefix + selected;
 
         if(!selectedTestsModel.contains(labeled)){
             selectedTestsModel.addElement(labeled);
         }
     }
 
+    // ===================== ONLY MODIFIED METHOD =====================
     private void simulateSelectedTests() {
         if(selectedTestsModel.isEmpty()){
             JOptionPane.showMessageDialog(frame,"No tests selected!");
             return;
         }
 
+        Random rand = new Random();
+
+        JTextArea bloodArea = new JTextArea();
+        JTextArea urineArea = new JTextArea();
+        JTextArea stoolArea = new JTextArea();
+        JTextArea mouthArea = new JTextArea();
+
+        bloodArea.setEditable(false);
+        urineArea.setEditable(false);
+        stoolArea.setEditable(false);
+        mouthArea.setEditable(false);
+
+        StringBuilder blood = new StringBuilder();
+        StringBuilder urine = new StringBuilder();
+        StringBuilder stool = new StringBuilder();
+        StringBuilder mouth = new StringBuilder();
+
         double total = 0;
 
         for(int i=0;i<selectedTestsModel.size();i++){
             String labeled = selectedTestsModel.get(i);
-            String name = labeled.replace("[BLOOD] ", "").replace("[URINE] ", "");
+
+            String name = labeled.replace("[BLOOD] ", "")
+                                 .replace("[URINE] ", "")
+                                 .replace("[STOOL] ", "")
+                                 .replace("[MOUTH] ", "");
+
             selectTest(name);
             total += currentTest.getPrice();
+
+            double value = getRandomValue(name, rand);
+            String result = currentTest.evaluate(value, patientSex);
+
+            String block =
+                    "\nTEST: " + name +
+                    "\nVALUE: " + String.format("%.2f", value) +
+                    "\nRESULT: " + result +
+                    "\n" + currentTest.info() +
+                    "\n----------------------------------------\n";
+
+            if(labeled.contains("[BLOOD]")) {
+                blood.append(block);
+            } else if(labeled.contains("[URINE]")) {
+                urine.append(block);
+            } else if(labeled.contains("[STOOL]")) {
+                stool.append(block);
+            } else {
+                mouth.append(block);
+            }
         }
 
         int confirm = JOptionPane.showConfirmDialog(frame,
@@ -193,38 +257,89 @@ public class LabGUI {
 
         if(confirm != JOptionPane.OK_OPTION) return;
 
-        Random rand = new Random();
+        JFrame fb = new JFrame("Blood Test Results");
+        JFrame fu = new JFrame("Urine Test Results");
+        JFrame fs = new JFrame("Stool Test Results");
+        JFrame fm = new JFrame("Mouth Swab Results");
 
-        for(int i=0;i<selectedTestsModel.size();i++){
-            String labeled = selectedTestsModel.get(i);
-            String name = labeled.replace("[BLOOD] ", "").replace("[URINE] ", "");
-            selectTest(name);
+        bloodArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
+                "\n----------------------------------------\n" + blood.toString());
 
-            double value = rand.nextDouble() * 300;
-            String result = currentTest.evaluate(value, patientSex);
+        urineArea.setText(urine.toString());
+        stoolArea.setText(stool.toString());
+        mouthArea.setText(mouth.toString());
 
-            String type = labeled.contains("[BLOOD]") ? "BLOOD TEST" : "URINE TEST";
+        fb.add(new JScrollPane(bloodArea));
+        fu.add(new JScrollPane(urineArea));
+        fs.add(new JScrollPane(stoolArea));
+        fm.add(new JScrollPane(mouthArea));
 
-            JTextArea area = new JTextArea();
-            area.setEditable(false);
+        fb.setSize(450,400);
+        fu.setSize(450,400);
+        fs.setSize(450,400);
+        fm.setSize(450,400);
 
-            area.setText(
-                    "PATIENT: " + patientName +
-                    "\nTYPE: " + type +
-                    "\nTEST: " + name +
-                    "\nVALUE: " + value +
-                    "\nRESULT: " + result +
-                    "\n\n" + currentTest.info()
-            );
-
-            JFrame f = new JFrame(name + " Result");
-            f.setSize(350,250);
-            f.add(new JScrollPane(area));
-            f.setVisible(true);
-        }
+        fb.setVisible(true);
+        fu.setVisible(true);
+        fs.setVisible(true);
+        fm.setVisible(true);
 
         selectedTestsModel.clear();
     }
+
+    // ===================== NEW METHOD (REALISTIC VALUES) =====================
+    private double getRandomValue(String test, Random rand) {
+        switch(test) {
+
+            // BLOOD CHEMISTRY
+            case "FBS": return 60 + rand.nextDouble() * 140; // 60–200
+            case "RBS": return 70 + rand.nextDouble() * 180;
+            case "Total Cholesterol": return 120 + rand.nextDouble() * 200;
+            case "HDL": return 30 + rand.nextDouble() * 70;
+            case "LDL": return 50 + rand.nextDouble() * 160;
+            case "Triglycerides": return 50 + rand.nextDouble() * 250;
+            case "Creatinine": return 0.5 + rand.nextDouble() * 2.0;
+            case "Uric Acid": return 2.0 + rand.nextDouble() * 8.0;
+            case "BUN": return 7 + rand.nextDouble() * 25;
+            case "AST": return 10 + rand.nextDouble() * 60;
+            case "ALT": return 10 + rand.nextDouble() * 70;
+            case "Albumin": return 3.0 + rand.nextDouble() * 2.0;
+            case "Total Protein": return 6.0 + rand.nextDouble() * 3.0;
+            case "ALP": return 40 + rand.nextDouble() * 200;
+            case "Total Calcium": return 8.0 + rand.nextDouble() * 3.0;
+
+            case "Sodium": return 135 + rand.nextDouble() * 10;
+            case "Potassium": return 3.5 + rand.nextDouble() * 2.0;
+            case "Chloride": return 98 + rand.nextDouble() * 10;
+            case "Ionized Calcium": return 1.0 + rand.nextDouble() * 0.5;
+
+            // URINE
+            case "Urinalysis": return rand.nextDouble() * 10;
+            case "Urine Protein": return rand.nextDouble() * 30;
+            case "Urine Glucose": return rand.nextDouble() * 20;
+            case "Urine Ketones": return rand.nextDouble() * 15;
+            case "Urine Specific Gravity": return 1.005 + rand.nextDouble() * 0.020;
+            case "Urine pH": return 4.5 + rand.nextDouble() * 4.0;
+
+            // STOOL
+            case "Stool pH": return 5.5 + rand.nextDouble() * 3.0;
+            case "Occult Blood": return rand.nextDouble() * 5;
+            case "Stool Fat": return rand.nextDouble() * 20;
+            case "Stool WBC": return rand.nextDouble() * 50;
+            case "Parasite Test": return rand.nextDouble() * 3;
+
+            // MOUTH
+            case "Oral Bacteria": return rand.nextDouble() * 100;
+            case "Candida": return rand.nextDouble() * 50;
+            case "Strep Test": return rand.nextDouble() * 30;
+            case "Oral Viral Load": return rand.nextDouble() * 200;
+            case "Oral pH": return 6.0 + rand.nextDouble() * 2.0;
+
+            default: return rand.nextDouble() * 100;
+        }
+    }
+
+    // ================================================================
 
     private void selectTest(String selected){
         switch(selected){
@@ -243,6 +358,7 @@ public class LabGUI {
             case "Total Protein": currentTest = new SerumTests.TotalProtein(); break;
             case "ALP": currentTest = new SerumTests.ALP(); break;
             case "Total Calcium": currentTest = new SerumTests.TotalCalcium(); break;
+
             case "Sodium": currentTest = new PlasmaTests.Sodium(); break;
             case "Potassium": currentTest = new PlasmaTests.Potassium(); break;
             case "Chloride": currentTest = new PlasmaTests.Chloride(); break;
@@ -254,6 +370,18 @@ public class LabGUI {
             case "Urine Ketones": currentTest = new UrineTests.UrineKetones(); break;
             case "Urine Specific Gravity": currentTest = new UrineTests.UrineSpecificGravity(); break;
             case "Urine pH": currentTest = new UrineTests.UrinepH(); break;
+
+            case "Stool pH": currentTest = new StoolTests.StoolPH(); break;
+            case "Occult Blood": currentTest = new StoolTests.OccultBlood(); break;
+            case "Stool Fat": currentTest = new StoolTests.StoolFat(); break;
+            case "Stool WBC": currentTest = new StoolTests.StoolWBC(); break;
+            case "Parasite Test": currentTest = new StoolTests.ParasiteTest(); break;
+
+            case "Oral Bacteria": currentTest = new MouthSwabTests.OralBacteria(); break;
+            case "Candida": currentTest = new MouthSwabTests.CandidaTest(); break;
+            case "Strep Test": currentTest = new MouthSwabTests.StrepTest(); break;
+            case "Oral Viral Load": currentTest = new MouthSwabTests.ViralLoad(); break;
+            case "Oral pH": currentTest = new MouthSwabTests.PHLevel(); break;
         }
     }
 }
