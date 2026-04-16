@@ -257,33 +257,79 @@ public class LabGUI {
 
         if(confirm != JOptionPane.OK_OPTION) return;
 
-        JFrame fb = new JFrame("Blood Test Results");
-        JFrame fu = new JFrame("Urine Test Results");
-        JFrame fs = new JFrame("Stool Test Results");
-        JFrame fm = new JFrame("Mouth Swab Results");
+        JFrame receiptFrame = new JFrame("Official Receipt");
 
-        bloodArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
-                "\n----------------------------------------\n" + blood.toString());
+        JTextArea receiptArea = new JTextArea();
+        receiptArea.setEditable(false);
 
-        urineArea.setText(urine.toString());
-        stoolArea.setText(stool.toString());
-        mouthArea.setText(mouth.toString());
+        StringBuilder receipt = new StringBuilder();
 
-        fb.add(new JScrollPane(bloodArea));
-        fu.add(new JScrollPane(urineArea));
-        fs.add(new JScrollPane(stoolArea));
-        fm.add(new JScrollPane(mouthArea));
+        receipt.append("===== CLINICAL LAB RECEIPT =====\n");
+        receipt.append("Patient: ").append(patientName).append("\n");
+        receipt.append("Age: ").append(patientAge).append("\n");
+        receipt.append("Sex: ").append(patientSex).append("\n");
+        receipt.append("----------------------------------------\n");
 
-        fb.setSize(450,400);
-        fu.setSize(450,400);
-        fs.setSize(450,400);
-        fm.setSize(450,400);
+        for(int i = 0; i < selectedTestsModel.size(); i++){
+            String labeled = selectedTestsModel.get(i);
 
-        fb.setVisible(true);
-        fu.setVisible(true);
-        fs.setVisible(true);
-        fm.setVisible(true);
+            String name = labeled.replace("[BLOOD] ", "")
+                                .replace("[URINE] ", "")
+                                .replace("[STOOL] ", "")
+                                .replace("[MOUTH] ", "");
 
+            selectTest(name);
+            receipt.append(name)
+                .append(" - $")
+                .append(currentTest.getPrice())
+                .append("\n");
+        }
+
+        receipt.append("----------------------------------------\n");
+        receipt.append("TOTAL: $").append(total).append("\n");
+        receipt.append("Thank you!\n");
+
+        receiptArea.setText(receipt.toString());
+
+        receiptFrame.add(new JScrollPane(receiptArea));
+        receiptFrame.setSize(350, 400);
+        receiptFrame.setVisible(true);
+
+        if (blood.length() > 0) {
+            JFrame fb = new JFrame("Blood Test Results");
+            bloodArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
+                    "\n----------------------------------------\n" + blood.toString());
+            fb.add(new JScrollPane(bloodArea));
+            fb.setSize(450,400);
+            fb.setVisible(true);
+        }
+
+        if (urine.length() > 0) {
+            JFrame fu = new JFrame("Urine Test Results");
+            urineArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
+                    "\n----------------------------------------\n" + urine.toString());
+            fu.add(new JScrollPane(urineArea));
+            fu.setSize(450,400);
+            fu.setVisible(true);
+        }
+
+        if (stool.length() > 0) {
+            JFrame fs = new JFrame("Stool Test Results");
+            stoolArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
+                    "\n----------------------------------------\n" + stool.toString());
+            fs.add(new JScrollPane(stoolArea));
+            fs.setSize(450,400);
+            fs.setVisible(true);
+        }
+
+        if (mouth.length() > 0) {
+            JFrame fm = new JFrame("Mouth Swab Results");
+            mouthArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
+                    "\n----------------------------------------\n" + mouth.toString());
+            fm.add(new JScrollPane(mouthArea));
+            fm.setSize(450,400);
+            fm.setVisible(true);
+        }
         selectedTestsModel.clear();
     }
 
