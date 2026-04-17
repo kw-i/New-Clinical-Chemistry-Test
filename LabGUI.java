@@ -264,7 +264,7 @@ public class LabGUI {
 
         StringBuilder receipt = new StringBuilder();
 
-        receipt.append("===== CLINICAL LAB RECEIPT =====\n");
+        receipt.append("===== RECEIPT =====\n");
         receipt.append("Patient: ").append(patientName).append("\n");
         receipt.append("Age: ").append(patientAge).append("\n");
         receipt.append("Sex: ").append(patientSex).append("\n");
@@ -302,6 +302,7 @@ public class LabGUI {
             fb.add(new JScrollPane(bloodArea));
             fb.setSize(450,400);
             fb.setVisible(true);
+            
         }
 
         if (urine.length() > 0) {
