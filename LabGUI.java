@@ -193,7 +193,6 @@ public class LabGUI {
         }
     }
 
-    // ===================== ONLY MODIFIED METHOD =====================
     private void simulateSelectedTests() {
         if(selectedTestsModel.isEmpty()){
             JOptionPane.showMessageDialog(frame,"No tests selected!");
@@ -334,7 +333,6 @@ public class LabGUI {
         selectedTestsModel.clear();
     }
 
-    // ===================== NEW METHOD (REALISTIC VALUES) =====================
     private double getRandomValue(String test, Random rand) {
         switch(test) {
 
