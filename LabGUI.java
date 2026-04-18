@@ -184,121 +184,134 @@ public class LabGUI {
     // simulate tests
     private void simulateSelectedTests() {
 
-        // check if empty
-        if(selectedTestsModel.isEmpty()){
-            JOptionPane.showMessageDialog(frame,"No tests selected!");
-            return;
-        }
-
-        // random generator
-        Random rand = new Random();
-
-        // text areas
-        JTextArea bloodArea = new JTextArea();
-        JTextArea urineArea = new JTextArea();
-        JTextArea stoolArea = new JTextArea();
-        JTextArea mouthArea = new JTextArea();
-
-        bloodArea.setEditable(false);
-        urineArea.setEditable(false);
-        stoolArea.setEditable(false);
-        mouthArea.setEditable(false);
-
-        // result builders
-        StringBuilder blood = new StringBuilder();
-        StringBuilder urine = new StringBuilder();
-        StringBuilder stool = new StringBuilder();
-        StringBuilder mouth = new StringBuilder();
-
-        double total = 0;
-
-        // loop selected tests
-        for(int i=0;i<selectedTestsModel.size();i++){
-
-            String labeled = selectedTestsModel.get(i);
-
-            // remove label
-            String name = labeled.replace("[BLOOD] ", "")
-                                 .replace("[URINE] ", "")
-                                 .replace("[STOOL] ", "")
-                                 .replace("[MOUTH] ", "");
-
-            selectTest(name);
-
-            total += currentTest.getPrice();
-
-            double value = getRandomValue(name, rand);
-
-            String result = currentTest.evaluate(value, patientSex);
-
-            // result block
-            String block =
-                    "\nTEST: " + name +
-                    "\nVALUE: " + String.format("%.2f", value) +
-                    "\nRESULT: " + result +
-                    "\n" + currentTest.info() +
-                    "\n----------------------------------------\n";
-
-            // assign to category
-            if(labeled.contains("[BLOOD]")) blood.append(block);
-            else if(labeled.contains("[URINE]")) urine.append(block);
-            else if(labeled.contains("[STOOL]")) stool.append(block);
-            else mouth.append(block);
-        }
-
-        // payment confirm
-        int confirm = JOptionPane.showConfirmDialog(frame,
-                "Total Price: $" + total + "\nProceed?",
-                "Payment", JOptionPane.OK_CANCEL_OPTION);
-
-        if(confirm != JOptionPane.OK_OPTION) return;
-
-        // receipt frame
-        JFrame receiptFrame = new JFrame("Official Receipt");
-
-        JTextArea receiptArea = new JTextArea();
-        receiptArea.setEditable(false);
-
-        StringBuilder receipt = new StringBuilder();
-
-        // receipt content
-        receipt.append("===== RECEIPT =====\n");
-        receipt.append("Patient: ").append(patientName).append("\n");
-        receipt.append("Age: ").append(patientAge).append("\n");
-        receipt.append("Sex: ").append(patientSex).append("\n");
-        receipt.append("----------------------------------------\n");
-
-        // list tests
-        for(int i = 0; i < selectedTestsModel.size(); i++){
-
-            String labeled = selectedTestsModel.get(i);
-
-            String name = labeled.replace("[BLOOD] ", "")
-                                 .replace("[URINE] ", "")
-                                 .replace("[STOOL] ", "")
-                                 .replace("[MOUTH] ", "");
-
-            selectTest(name);
-
-            receipt.append(name)
-                    .append(" - $")
-                    .append(currentTest.getPrice())
-                    .append("\n");
-        }
-
-        receipt.append("----------------------------------------\n");
-        receipt.append("TOTAL: $").append(total).append("\n");
-        receipt.append("Thank you!\n");
-
-        receiptArea.setText(receipt.toString());
-
-        receiptFrame.add(new JScrollPane(receiptArea));
-        receiptFrame.setSize(350, 400);
-        receiptFrame.setVisible(true);
-
-        // clear selected list
-        selectedTestsModel.clear();
+    if (selectedTestsModel.isEmpty()) {
+        JOptionPane.showMessageDialog(frame, "No tests selected!");
+        return;
     }
+
+    Random rand = new Random();
+
+    StringBuilder blood = new StringBuilder();
+    StringBuilder urine = new StringBuilder();
+    StringBuilder stool = new StringBuilder();
+    StringBuilder mouth = new StringBuilder();
+
+    double total = 0;
+
+    for (int i = 0; i < selectedTestsModel.size(); i++) {
+
+        String labeled = selectedTestsModel.get(i);
+
+        String name = labeled.replace("[BLOOD] ", "")
+                             .replace("[URINE] ", "")
+                             .replace("[STOOL] ", "")
+                             .replace("[MOUTH] ", "");
+
+        selectTest(name);
+
+        if (currentTest == null) {
+            JOptionPane.showMessageDialog(frame, "Unknown test: " + name);
+            continue;
+        }
+
+        total += currentTest.getPrice();
+
+        double value = getRandomValue(name, rand);
+        String result = currentTest.evaluate(value, patientSex);
+
+        String block =
+                "TEST: " + name + "\n" +
+                "VALUE: " + String.format("%.2f", value) + "\n" +
+                "RESULT: " + result + "\n" +
+                currentTest.info() + "\n" +
+                "----------------------------------------\n\n";
+
+        if (labeled.contains("[BLOOD]")) blood.append(block);
+        else if (labeled.contains("[URINE]")) urine.append(block);
+        else if (labeled.contains("[STOOL]")) stool.append(block);
+        else mouth.append(block);
+    }
+
+    // ================= RESULTS WINDOW =================
+
+    JTextArea bloodArea = new JTextArea("BLOOD TESTS\n\n" + blood);
+    JTextArea urineArea = new JTextArea("URINE TESTS\n\n" + urine);
+    JTextArea stoolArea = new JTextArea("STOOL TESTS\n\n" + stool);
+    JTextArea mouthArea = new JTextArea("MOUTH TESTS\n\n" + mouth);
+
+    bloodArea.setEditable(false);
+    urineArea.setEditable(false);
+    stoolArea.setEditable(false);
+    mouthArea.setEditable(false);
+
+    JFrame resultsFrame = new JFrame("Lab Results");
+    resultsFrame.setSize(800, 600);
+    resultsFrame.setLayout(new GridLayout(4, 1));
+
+    resultsFrame.add(new JScrollPane(bloodArea));
+    resultsFrame.add(new JScrollPane(urineArea));
+    resultsFrame.add(new JScrollPane(stoolArea));
+    resultsFrame.add(new JScrollPane(mouthArea));
+
+    resultsFrame.setVisible(true);
+
+    // ================= PAYMENT =================
+
+    int confirm = JOptionPane.showConfirmDialog(
+            frame,
+            "Total Price: $" + total + "\nProceed to payment?",
+            "Payment",
+            JOptionPane.OK_CANCEL_OPTION
+    );
+
+    if (confirm != JOptionPane.OK_OPTION) {
+        return;
+    }
+
+    // ================= RECEIPT =================
+
+    JFrame receiptFrame = new JFrame("Official Receipt");
+
+    JTextArea receiptArea = new JTextArea();
+    receiptArea.setEditable(false);
+
+    StringBuilder receipt = new StringBuilder();
+
+    receipt.append("===== RECEIPT =====\n");
+    receipt.append("Patient: ").append(patientName).append("\n");
+    receipt.append("Age: ").append(patientAge).append("\n");
+    receipt.append("Sex: ").append(patientSex).append("\n");
+    receipt.append("----------------------------------------\n");
+
+    for (int i = 0; i < selectedTestsModel.size(); i++) {
+
+        String labeled = selectedTestsModel.get(i);
+
+        String name = labeled.replace("[BLOOD] ", "")
+                             .replace("[URINE] ", "")
+                             .replace("[STOOL] ", "")
+                             .replace("[MOUTH] ", "");
+
+        selectTest(name);
+
+        receipt.append(name)
+                .append(" - $")
+                .append(currentTest.getPrice())
+                .append("\n");
+    }
+
+    receipt.append("----------------------------------------\n");
+    receipt.append("TOTAL: $").append(total).append("\n");
+    receipt.append("Thank you!\n");
+
+    receiptArea.setText(receipt.toString());
+
+    receiptFrame.add(new JScrollPane(receiptArea));
+    receiptFrame.setSize(350, 400);
+    receiptFrame.setVisible(true);
+
+    selectedTestsModel.clear();
+}
 
     // button style
     private void styleButton(JButton b){
