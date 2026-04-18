@@ -1,33 +1,40 @@
 import javax.swing.*;
 import java.awt.*;
-import java.util.Random;
+import java.util.*;
 
+// main class
 public class LabGUI {
+
+    // main frame
     private JFrame frame;
-    private JList<String> testList;
+
+    // selected tests list
     private DefaultListModel<String> selectedTestsModel;
     private JList<String> selectedTestsList;
-    private JButton addTestButton, takeTestButton;
-    private JComboBox<String> testTypeBox;
 
+    // button
+    private JButton takeTestButton;
+
+    // current test object
     private Test currentTest;
 
+    // patient info
     private String patientName;
     private char patientSex;
     private int patientAge;
 
+    // colors
     private final Color BG_COLOR = new Color(255, 248, 180);
-    private final Color PANEL_COLOR = new Color(255, 239, 140);
     private final Color BUTTON_COLOR = new Color(255, 204, 0);
     private final Color TEXT_COLOR = new Color(102, 75, 0);
     private final Color FIELD_COLOR = new Color(255, 255, 210);
 
+    // test arrays
     private final String[] bloodTests = {
             "FBS","RBS","Total Cholesterol","HDL","LDL","Triglycerides",
             "Creatinine","Uric Acid","BUN","AST","ALT","Albumin",
             "Total Protein","ALP","Total Calcium",
-            "Sodium","Potassium","Chloride",
-            "Ionized Calcium"
+            "Sodium","Potassium","Chloride","Ionized Calcium"
     };
 
     private final String[] urineTests = {
@@ -43,164 +50,153 @@ public class LabGUI {
             "Oral Bacteria","Candida","Strep Test","Oral Viral Load","Oral pH"
     };
 
+    // constructor
     public LabGUI() {
+
+        // get patient info
         getPatientInfo();
 
+        // create frame
         frame = new JFrame("Clinical Chemistry Lab Simulator");
-        frame.setSize(750, 450);
+        frame.setSize(900, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        // main panel
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(BG_COLOR);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
-        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
-        infoPanel.setBackground(PANEL_COLOR);
-
-        infoPanel.add(createLabel("Name: " + patientName));
-        infoPanel.add(createLabel("Age: " + patientAge));
-        infoPanel.add(createLabel("Sex: " + patientSex));
-
-        testTypeBox = new JComboBox<>(new String[]{
-                "Blood Tests", "Urine Tests", "Stool Tests", "Mouth Swab Tests"
-        });
-
-        testTypeBox.setBackground(FIELD_COLOR);
-        testTypeBox.setForeground(TEXT_COLOR);
-
-        infoPanel.add(createLabel("Test Type:"));
-        infoPanel.add(testTypeBox);
-
+        // patient info panel
+        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        infoPanel.setBackground(BG_COLOR);
+        infoPanel.add(new JLabel("Name: " + patientName));
+        infoPanel.add(new JLabel("Age: " + patientAge));
+        infoPanel.add(new JLabel("Sex: " + patientSex));
         mainPanel.add(infoPanel, BorderLayout.NORTH);
 
-        JPanel centerPanel = new JPanel(new BorderLayout(10,0));
-        centerPanel.setBackground(BG_COLOR);
+        // tabbed panel
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("Blood", createBloodPanel());
+        tabs.addTab("Urine", createUrinePanel());
+        tabs.addTab("Stool", createStoolPanel());
+        tabs.addTab("Mouth", createMouthPanel());
 
-        JPanel availablePanel = new JPanel(new BorderLayout());
-        availablePanel.setBackground(PANEL_COLOR);
-        availablePanel.add(createLabel("Available Tests:"), BorderLayout.NORTH);
+        mainPanel.add(tabs, BorderLayout.CENTER);
 
-        testList = new JList<>(bloodTests);
-        testList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        testList.setBackground(FIELD_COLOR);
-        testList.setForeground(TEXT_COLOR);
+        // right panel
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBackground(BG_COLOR);
 
-        availablePanel.add(new JScrollPane(testList), BorderLayout.CENTER);
-
-        JPanel buttonsPanel = new JPanel();
-        buttonsPanel.setBackground(PANEL_COLOR);
-
-        addTestButton = new JButton("Add Test");
-        takeTestButton = new JButton("Take Test (Simulated)");
-
-        styleButton(addTestButton);
-        styleButton(takeTestButton);
-
-        buttonsPanel.add(addTestButton);
-        buttonsPanel.add(takeTestButton);
-
-        availablePanel.add(buttonsPanel, BorderLayout.SOUTH);
-
-        centerPanel.add(availablePanel, BorderLayout.CENTER);
-
-        JPanel selectedPanel = new JPanel(new BorderLayout());
-        selectedPanel.setBackground(PANEL_COLOR);
-        selectedPanel.add(createLabel("Selected Tests:"), BorderLayout.NORTH);
-
+        // selected tests list
         selectedTestsModel = new DefaultListModel<>();
         selectedTestsList = new JList<>(selectedTestsModel);
         selectedTestsList.setBackground(FIELD_COLOR);
-        selectedTestsList.setForeground(TEXT_COLOR);
 
-        selectedPanel.add(new JScrollPane(selectedTestsList), BorderLayout.CENTER);
+        rightPanel.add(new JLabel("Selected Tests:"), BorderLayout.NORTH);
+        rightPanel.add(new JScrollPane(selectedTestsList), BorderLayout.CENTER);
 
-        centerPanel.add(selectedPanel, BorderLayout.EAST);
-
-        mainPanel.add(centerPanel);
-        frame.add(mainPanel);
-
-        addTestButton.addActionListener(e -> addSelectedTest());
+        // take test button
+        takeTestButton = new JButton("Take Test");
+        styleButton(takeTestButton);
         takeTestButton.addActionListener(e -> simulateSelectedTests());
-        testTypeBox.addActionListener(e -> switchTestMode());
 
+        rightPanel.add(takeTestButton, BorderLayout.SOUTH);
+
+        mainPanel.add(rightPanel, BorderLayout.EAST);
+
+        // add panel to frame
+        frame.add(mainPanel);
         frame.setVisible(true);
     }
 
-    private void switchTestMode() {
-        String selected = (String) testTypeBox.getSelectedItem();
+    // create test panel
+    private JPanel createTestPanel(String[] tests, Color shade) {
 
-        switch(selected) {
-            case "Blood Tests": testList.setListData(bloodTests); break;
-            case "Urine Tests": testList.setListData(urineTests); break;
-            case "Stool Tests": testList.setListData(stoolTests); break;
-            case "Mouth Swab Tests": testList.setListData(mouthTests); break;
-        }
+        // panel
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(shade);
+
+        // test list
+        JList<String> list = new JList<>(tests);
+        list.setBackground(FIELD_COLOR);
+        list.setBorder(BorderFactory.createTitledBorder("Available Tests"));
+
+        // add button
+        JButton addBtn = new JButton("Add Test");
+        styleButton(addBtn);
+
+        // add button action
+        addBtn.addActionListener(e -> {
+            String selected = list.getSelectedValue();
+            if (selected != null) {
+
+                // add label prefix
+                String prefix = "";
+                if(Arrays.asList(bloodTests).contains(selected)) prefix = "[BLOOD] ";
+                else if(Arrays.asList(urineTests).contains(selected)) prefix = "[URINE] ";
+                else if(Arrays.asList(stoolTests).contains(selected)) prefix = "[STOOL] ";
+                else prefix = "[MOUTH] ";
+
+                String labeled = prefix + selected;
+
+                // add to selected list
+                if (!selectedTestsModel.contains(labeled)) {
+                    selectedTestsModel.addElement(labeled);
+                }
+            }
+        });
+
+        // bottom panel
+        JPanel bottom = new JPanel();
+        bottom.setBackground(shade);
+        bottom.add(addBtn);
+
+        panel.add(new JScrollPane(list), BorderLayout.CENTER);
+        panel.add(bottom, BorderLayout.SOUTH);
+
+        return panel;
     }
 
-    private JLabel createLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setForeground(TEXT_COLOR);
-        return label;
+    // blood panel
+    private JPanel createBloodPanel() {
+        JPanel p = createTestPanel(bloodTests, new Color(255, 220, 140));
+        p.setBorder(BorderFactory.createLineBorder(Color.RED, 2));
+        return p;
     }
 
-    private void getPatientInfo() {
-        JTextField nameField = new JTextField();
-        JTextField ageField = new JTextField();
-        JComboBox<String> sexBox = new JComboBox<>(new String[]{"Male","Female"});
-
-        JPanel panel = new JPanel(new GridLayout(3,2));
-        panel.add(new JLabel("Name:")); panel.add(nameField);
-        panel.add(new JLabel("Sex:")); panel.add(sexBox);
-        panel.add(new JLabel("Age:")); panel.add(ageField);
-
-        int result;
-        do {
-            result = JOptionPane.showConfirmDialog(null, panel, "Patient Info",
-                    JOptionPane.OK_CANCEL_OPTION);
-            if(result != JOptionPane.OK_OPTION) System.exit(0);
-        } while(nameField.getText().isEmpty() || ageField.getText().isEmpty());
-
-        patientName = nameField.getText();
-        patientSex = sexBox.getSelectedItem().equals("Male") ? 'M' : 'F';
-
-        try { patientAge = Integer.parseInt(ageField.getText()); }
-        catch(Exception e) { patientAge = 0; }
+    // urine panel
+    private JPanel createUrinePanel() {
+        JPanel p = createTestPanel(urineTests, new Color(230, 255, 210));
+        p.setBorder(BorderFactory.createDashedBorder(Color.BLUE));
+        return p;
     }
 
-    private void styleButton(JButton b){
-        b.setBackground(BUTTON_COLOR);
-        b.setForeground(TEXT_COLOR);
+    // stool panel
+    private JPanel createStoolPanel() {
+        JPanel p = createTestPanel(stoolTests, new Color(210, 235, 170));
+        p.setBorder(BorderFactory.createLineBorder(new Color(120, 80, 40), 2));
+        return p;
     }
 
-    private void addSelectedTest() {
-        String selected = testList.getSelectedValue();
-        if(selected == null) return;
-
-        String type = (String) testTypeBox.getSelectedItem();
-
-        String prefix = "";
-        switch(type) {
-            case "Blood Tests": prefix = "[BLOOD] "; break;
-            case "Urine Tests": prefix = "[URINE] "; break;
-            case "Stool Tests": prefix = "[STOOL] "; break;
-            case "Mouth Swab Tests": prefix = "[MOUTH] "; break;
-        }
-
-        String labeled = prefix + selected;
-
-        if(!selectedTestsModel.contains(labeled)){
-            selectedTestsModel.addElement(labeled);
-        }
+    // mouth panel
+    private JPanel createMouthPanel() {
+        JPanel p = createTestPanel(mouthTests, new Color(255, 210, 150));
+        p.setBorder(BorderFactory.createLineBorder(Color.ORANGE, 2));
+        return p;
     }
 
+    // simulate tests
     private void simulateSelectedTests() {
+
+        // check if empty
         if(selectedTestsModel.isEmpty()){
             JOptionPane.showMessageDialog(frame,"No tests selected!");
             return;
         }
 
+        // random generator
         Random rand = new Random();
 
+        // text areas
         JTextArea bloodArea = new JTextArea();
         JTextArea urineArea = new JTextArea();
         JTextArea stoolArea = new JTextArea();
@@ -211,6 +207,7 @@ public class LabGUI {
         stoolArea.setEditable(false);
         mouthArea.setEditable(false);
 
+        // result builders
         StringBuilder blood = new StringBuilder();
         StringBuilder urine = new StringBuilder();
         StringBuilder stool = new StringBuilder();
@@ -218,7 +215,69 @@ public class LabGUI {
 
         double total = 0;
 
+        // loop selected tests
         for(int i=0;i<selectedTestsModel.size();i++){
+
+            String labeled = selectedTestsModel.get(i);
+
+            // remove label
+            String name = labeled.replace("[BLOOD] ", "")
+                                 .replace("[URINE] ", "")
+                                 .replace("[STOOL] ", "")
+                                 .replace("[MOUTH] ", "");
+
+            // select test class
+            selectTest(name);
+
+            // add price
+            total += currentTest.getPrice();
+
+            // random value
+            double value = getRandomValue(name, rand);
+
+            // evaluate result
+            String result = currentTest.evaluate(value, patientSex);
+
+            // result block
+            String block =
+                    "\nTEST: " + name +
+                    "\nVALUE: " + String.format("%.2f", value) +
+                    "\nRESULT: " + result +
+                    "\n" + currentTest.info() +
+                    "\n----------------------------------------\n";
+
+            // assign to category
+            if(labeled.contains("[BLOOD]")) blood.append(block);
+            else if(labeled.contains("[URINE]")) urine.append(block);
+            else if(labeled.contains("[STOOL]")) stool.append(block);
+            else mouth.append(block);
+        }
+
+        // payment confirm
+        int confirm = JOptionPane.showConfirmDialog(frame,
+                "Total Price: $" + total + "\nProceed?",
+                "Payment", JOptionPane.OK_CANCEL_OPTION);
+
+        if(confirm != JOptionPane.OK_OPTION) return;
+
+        // receipt frame
+        JFrame receiptFrame = new JFrame("Official Receipt");
+
+        JTextArea receiptArea = new JTextArea();
+        receiptArea.setEditable(false);
+
+        StringBuilder receipt = new StringBuilder();
+
+        // receipt content
+        receipt.append("===== RECEIPT =====\n");
+        receipt.append("Patient: ").append(patientName).append("\n");
+        receipt.append("Age: ").append(patientAge).append("\n");
+        receipt.append("Sex: ").append(patientSex).append("\n");
+        receipt.append("----------------------------------------\n");
+
+        // list tests
+        for(int i = 0; i < selectedTestsModel.size(); i++){
+
             String labeled = selectedTestsModel.get(i);
 
             String name = labeled.replace("[BLOOD] ", "")
@@ -227,61 +286,11 @@ public class LabGUI {
                                  .replace("[MOUTH] ", "");
 
             selectTest(name);
-            total += currentTest.getPrice();
 
-            double value = getRandomValue(name, rand);
-            String result = currentTest.evaluate(value, patientSex);
-
-            String block =
-                    "\nTEST: " + name +
-                    "\nVALUE: " + String.format("%.2f", value) +
-                    "\nRESULT: " + result +
-                    "\n" + currentTest.info() +
-                    "\n----------------------------------------\n";
-
-            if(labeled.contains("[BLOOD]")) {
-                blood.append(block);
-            } else if(labeled.contains("[URINE]")) {
-                urine.append(block);
-            } else if(labeled.contains("[STOOL]")) {
-                stool.append(block);
-            } else {
-                mouth.append(block);
-            }
-        }
-
-        int confirm = JOptionPane.showConfirmDialog(frame,
-                "Total Price: $" + total + "\nProceed?",
-                "Payment", JOptionPane.OK_CANCEL_OPTION);
-
-        if(confirm != JOptionPane.OK_OPTION) return;
-
-        JFrame receiptFrame = new JFrame("Official Receipt");
-
-        JTextArea receiptArea = new JTextArea();
-        receiptArea.setEditable(false);
-
-        StringBuilder receipt = new StringBuilder();
-
-        receipt.append("===== RECEIPT =====\n");
-        receipt.append("Patient: ").append(patientName).append("\n");
-        receipt.append("Age: ").append(patientAge).append("\n");
-        receipt.append("Sex: ").append(patientSex).append("\n");
-        receipt.append("----------------------------------------\n");
-
-        for(int i = 0; i < selectedTestsModel.size(); i++){
-            String labeled = selectedTestsModel.get(i);
-
-            String name = labeled.replace("[BLOOD] ", "")
-                                .replace("[URINE] ", "")
-                                .replace("[STOOL] ", "")
-                                .replace("[MOUTH] ", "");
-
-            selectTest(name);
             receipt.append(name)
-                .append(" - $")
-                .append(currentTest.getPrice())
-                .append("\n");
+                    .append(" - $")
+                    .append(currentTest.getPrice())
+                    .append("\n");
         }
 
         receipt.append("----------------------------------------\n");
@@ -294,44 +303,46 @@ public class LabGUI {
         receiptFrame.setSize(350, 400);
         receiptFrame.setVisible(true);
 
-        if (blood.length() > 0) {
-            JFrame fb = new JFrame("Blood Test Results");
-            bloodArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
-                    "\n----------------------------------------\n" + blood.toString());
-            fb.add(new JScrollPane(bloodArea));
-            fb.setSize(450,400);
-            fb.setVisible(true);
-            
-        }
-
-        if (urine.length() > 0) {
-            JFrame fu = new JFrame("Urine Test Results");
-            urineArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
-                    "\n----------------------------------------\n" + urine.toString());
-            fu.add(new JScrollPane(urineArea));
-            fu.setSize(450,400);
-            fu.setVisible(true);
-        }
-
-        if (stool.length() > 0) {
-            JFrame fs = new JFrame("Stool Test Results");
-            stoolArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
-                    "\n----------------------------------------\n" + stool.toString());
-            fs.add(new JScrollPane(stoolArea));
-            fs.setSize(450,400);
-            fs.setVisible(true);
-        }
-
-        if (mouth.length() > 0) {
-            JFrame fm = new JFrame("Mouth Swab Results");
-            mouthArea.setText("PATIENT: " + patientName + "\nAGE: " + patientAge + "\nSEX: " + patientSex +
-                    "\n----------------------------------------\n" + mouth.toString());
-            fm.add(new JScrollPane(mouthArea));
-            fm.setSize(450,400);
-            fm.setVisible(true);
-        }
+        // clear selected list
         selectedTestsModel.clear();
     }
+
+    // button style
+    private void styleButton(JButton b){
+        b.setBackground(BUTTON_COLOR);
+        b.setForeground(TEXT_COLOR);
+    }
+
+    // get patient info dialog
+    private void getPatientInfo() {
+
+        JTextField nameField = new JTextField();
+        JTextField ageField = new JTextField();
+        JComboBox<String> sexBox = new JComboBox<>(new String[]{"Male","Female"});
+
+        JPanel panel = new JPanel(new GridLayout(3,2));
+        panel.add(new JLabel("Name:")); panel.add(nameField);
+        panel.add(new JLabel("Sex:")); panel.add(sexBox);
+        panel.add(new JLabel("Age:")); panel.add(ageField);
+
+        int result;
+
+        // loop until valid input
+        do {
+            result = JOptionPane.showConfirmDialog(null, panel, "Patient Info",
+                    JOptionPane.OK_CANCEL_OPTION);
+
+            if(result != JOptionPane.OK_OPTION) System.exit(0);
+
+        } while(nameField.getText().isEmpty() || ageField.getText().isEmpty());
+
+        patientName = nameField.getText();
+        patientSex = sexBox.getSelectedItem().equals("Male") ? 'M' : 'F';
+
+        try { patientAge = Integer.parseInt(ageField.getText()); }
+        catch(Exception e) { patientAge = 0; }
+    }
+
 
     private double getRandomValue(String test, Random rand) {
         switch(test) {
@@ -383,8 +394,6 @@ public class LabGUI {
             default: return rand.nextDouble() * 100;
         }
     }
-
-    // ================================================================
 
     private void selectTest(String selected){
         switch(selected){
