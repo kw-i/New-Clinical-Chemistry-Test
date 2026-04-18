@@ -2,7 +2,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.*;
 
-// main class
 public class LabGUI {
 
     // main frame
@@ -23,7 +22,6 @@ public class LabGUI {
     private char patientSex;
     private int patientAge;
 
-    // colors
     private final Color BG_COLOR = new Color(255, 248, 180);
     private final Color BUTTON_COLOR = new Color(255, 204, 0);
     private final Color TEXT_COLOR = new Color(102, 75, 0);
@@ -50,10 +48,9 @@ public class LabGUI {
             "Oral Bacteria","Candida","Strep Test","Oral Viral Load","Oral pH"
     };
 
-    // constructor
     public LabGUI() {
 
-        // get patient info
+        //calls method created later on
         getPatientInfo();
 
         // create frame
@@ -226,16 +223,12 @@ public class LabGUI {
                                  .replace("[STOOL] ", "")
                                  .replace("[MOUTH] ", "");
 
-            // select test class
             selectTest(name);
 
-            // add price
             total += currentTest.getPrice();
 
-            // random value
             double value = getRandomValue(name, rand);
 
-            // evaluate result
             String result = currentTest.evaluate(value, patientSex);
 
             // result block
@@ -343,7 +336,7 @@ public class LabGUI {
         catch(Exception e) { patientAge = 0; }
     }
 
-
+    //random value based on each reference range
     private double getRandomValue(String test, Random rand) {
         switch(test) {
 
